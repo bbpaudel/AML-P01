@@ -1,0 +1,49 @@
+---
+title: "AML_SVM_model"
+author: "Bishal Paudel"
+date: "2025-01-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Sphingolipid classifier using gene expression data
+
+This document contains description of the classifier used to predict sphingolipidomic subtypes from gene expression data. The input used for gene expression is VST-normalized values, and should be VST-normalized values from DESeq2 package. The classifier requires the expression values for 284 genes as outlined in Paudel et. al. Blood Adv 2024 (<https://doi.org/10.1182/bloodadvances.2023010535>). The classifier is support-vector machine (SVM) trained using R package 'caret' with the model type as 'svmLinear2'. For more details about the model implementation, please refer to caret documentation (<https://topepo.github.io/caret/>). This document contains the final SVM model, and example datasets.
+
+```{r Load the required packages, include=FALSE}
+require(caret)
+require(e1071)
+```
+
+Model and its features. It includes the coefficients (weights) to each feature (gene) and intercept. 
+```{r Classifier and features, echo=TRUE}
+
+svm_model = readRDS(paste0("Lipid_Gene_Classifier_final.rds"))
+model_Features = data.frame(value = coef(svm_model$finalModel))
+print(model_Features)
+
+```
+
+To use the classifier, load your data with gene expression data. Gene expression data should have columns as genes and samples as rows. Rows name should be the sample names, with gene expression stored in the respective columns for each sample. 
+
+```{r Classifier Usage, echo=TRUE}
+# Load example data, rownames should be set the sample names
+example_data = read.csv("Normalized_example_data.csv")
+rownames(example_data) = example_data$X
+example_data$X = NULL
+
+# use the classifier on the example dataset
+predict_SM = predict(svm_model, newdata = example_data, type = "raw")
+
+# frequency of two classes predicted
+print(table(predict_SM))
+
+
+# example summary of the sample names and their predicted classes
+example_sm_table = data.frame(sample_id = rownames(example_data), SM_class = predict_SM)
+print(example_sm_table)
+```
+
